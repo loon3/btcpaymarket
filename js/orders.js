@@ -10,9 +10,9 @@ function getBtcOrders(block, callback){
         
         for(var i=0; i < data.orders.length; i++){
      
-            if(data.orders[i].get_remaining > 100000) {
+//            if(data.orders[i].get_remaining > 100000 || data.orders[i].get_remaining == 0) {
                 orders.push({asset: data.orders[i].give_asset, divisible: data.divisibility[data.orders[i].give_asset], give_asset: data.orders[i].give_quantity, get_btc: data.orders[i].get_quantity, asset_remaining: data.orders[i].give_remaining, btc_remaining: data.orders[i].get_remaining, tx_index: data.orders[i].tx_index, tx_hash: data.orders[i].tx_hash, status: data.orders[i].status, expire_index: data.orders[i].expire_index, source: data.orders[i].source})
-            }
+//            }
             
         }
         
@@ -160,10 +160,13 @@ function calcAssetAmount(asset, btc, callback) {
                                     callback("Too many decimal places!")
                                 } else {
                                     //valid!
+                                    var usd_btc = sessionStorage.getItem("currentprice_btc");
+                                    var usdperorder = (btcAmount * usd_btc).toFixed(2)
+  
                                     $("#dialogSellAsset-cost").data("valid", true)
-                                    btcAmount = parseFloat(btcAmount).toFixed(8)
                                     $("#dialogSellAsset-cost").data("total", btcAmount)
-                                    callback(btcAmount + " BTC total")   
+                                    var displayTotal = "<div>" + parseFloat(btcAmount).toFixed(8) + " BTC</div><div class='small showUsd' style='font-style: italic; color: #266121;'>($"+usdperorder+")</div"
+                                    callback(displayTotal)   
                                 }
                             }
 
@@ -226,9 +229,15 @@ function calcBtcOrderAmount(inputval, callback) {
                                 callback("Too many decimal places!")
                             } else {
                                 //valid!
+                                var usd_btc = sessionStorage.getItem("currentprice_btc");
+                                var usdperorder = (total * usd_btc).toFixed(2)
+                                
                                 $("#dialogBuyAsset-cost").data("valid", true)
                                 $("#dialogBuyAsset-cost").data("total", total.toFixed(8))
-                                callback(total.toFixed(8) + " BTC")   
+                                
+                                var displayTotal = "<div>" + total.toFixed(8) + " BTC</div><div class='small showUsd' style='font-style: italic; color: #266121;'>($"+usdperorder+")</div"
+                                
+                                callback(displayTotal)   
                             }
                         }
                     }
@@ -265,6 +274,10 @@ function createTableOrders(orders, currentblock){
                 var btcperasset = (orders[i].get_btc / (orders[i].give_asset*100000000)).toFixed(8)
             }
             
+            var usd_btc = sessionStorage.getItem("currentprice_btc");
+            var usdperasset = (btcperasset * usd_btc).toFixed(2)
+            
+            if (usdperasset == 0 ) {usdperasset = "<$0.01"} else {usdperasset = "$"+usdperasset}
             //var time_remaining = (orders[i].expire_index-currentblock) 
             
             var time_remaining = ((orders[i].expire_index-currentblock) * 10 * 60).toTimeFormat() 
@@ -274,28 +287,49 @@ function createTableOrders(orders, currentblock){
             }
             
             if(orders[i].source == currentaddr) {
+                
+                //console.log(orders[i])
+                
+//                {asset: data.orders[i].give_asset, divisible: data.divisibility[data.orders[i].give_asset], give_asset: data.orders[i].give_quantity, get_btc: data.orders[i].get_quantity, asset_remaining: data.orders[i].give_remaining, btc_remaining: data.orders[i].get_remaining, tx_index: data.orders[i].tx_index, tx_hash: data.orders[i].tx_hash, status: data.orders[i].status, expire_index: data.orders[i].expire_index, source: data.orders[i].source}
+                
                 var row_class = "active-yours"
                 var active_status = "active yours" 
                 var active_status_display = "Active" 
-                if(orders[i].status != "open"){  
+                if(orders[i].status != "open" && orders[i].asset_remaining != 0){  
                     var row_class = "active"
                     var active_status = "closed yours" 
                     //var active_status_display = "Closed"
                     var active_status_display = (orders[i].status).capitalizeFirstLetter()
                     if(orders[i].status == "cancelled"){row_class = "danger"}
                     var time_remaining = "n/a"
-                }
+                } else if(orders[i].asset_remaining == 0){
+                    var row_class = "success"
+                    var active_status = "closed yours" 
+                    var active_status_display = "Filled"
+                    var time_remaining = "n/a"
+                    if(orders[i].divisible == 1){
+                        var asset_remaining = orders[i].give_asset / 100000000
+                    } else {
+                        var asset_remaining = orders[i].give_asset
+                    }
+                } 
                 yourordercount++
                 
-                $("#table-yourorders tbody").append("<tr class='"+row_class+" orderTx' id='order-"+orders[i].tx_index+"' data-tx_index='"+orders[i].tx_index+"' data-status='"+active_status+"'><td class='ordersTable hideSmall'>"+active_status_display+"</td><td><div class='ordersTable-icon'>"+assetIcon(orders[i].asset)+"</div><div class='ordersTable-name'>"+orders[i].asset+"</div></td><td>"+btcperasset+"</td><td class='ordersTable hideVerySmall'>"+asset_remaining+"</td><td class='ordersTable hideSmall hideLarge'>"+time_remaining+"</td></tr>")
+                $("#table-yourorders tbody").append("<tr class='"+row_class+" orderTx' id='order-"+orders[i].tx_index+"' data-tx_index='"+orders[i].tx_index+"' data-status='"+active_status+"'><td class='ordersTable hideSmall'>"+active_status_display+"</td><td><div class='ordersTable-icon'>"+assetIcon(orders[i].asset)+"</div><div class='ordersTable-name'>"+orders[i].asset+"</div></td><td>"+btcperasset+" <span class='showUsd small' style='font-style: italic; color: #266121;'>("+usdperasset+")</span></td><td class='ordersTable hideVerySmall'>"+asset_remaining+"</td><td class='ordersTable hideSmall hideLarge'>"+time_remaining+"</td></tr>")
                 
             } else {
-                if(orders[i].status == "open" && orders[i].asset_remaining > 0) {
+                
+                
+                if(orders[i].status == "open" && orders[i].btc_remaining > 100000) {
                     var row_class = "warning"
                     var active_status = "Active"
                     var active_status_display = "Active"
-//                    var time_remaining = ((orders[i].expire_index-currentblock) * 10 * 60) 
-                } else {
+                } else if(asset_remaining == 0){
+                    var row_class = "success"
+                    var active_status = "closed" 
+                    var active_status_display = "Filled"
+                    var time_remaining = "n/a"
+                } else if(orders[i].status != "open"){
                     var row_class = "active"
                     var active_status = "Closed"
                     var active_status_display = (orders[i].status).capitalizeFirstLetter()
@@ -303,7 +337,7 @@ function createTableOrders(orders, currentblock){
                     var time_remaining = "n/a"
                 }
                 
-                $("#ordersTable tbody").append("<tr class='"+row_class+" orderTx' id='order-"+orders[i].tx_index+"' data-tx_index='"+orders[i].tx_index+"' data-status='"+active_status+"'><td class='ordersTable hideSmall'>"+active_status_display+"</td><td><div class='ordersTable-icon'>"+assetIcon(orders[i].asset)+"</div><div class='ordersTable-name'>"+orders[i].asset+"</div></td><td>"+btcperasset+"</td><td class='ordersTable hideVerySmall'>"+asset_remaining+"</td><td class='ordersTable hideSmall hideLarge'>"+time_remaining+"</td></tr>")
+                $("#ordersTable tbody").append("<tr class='"+row_class+" orderTx' id='order-"+orders[i].tx_index+"' data-tx_index='"+orders[i].tx_index+"' data-status='"+active_status+"'><td class='ordersTable hideSmall'>"+active_status_display+"</td><td><div class='ordersTable-icon'>"+assetIcon(orders[i].asset)+"</div><div class='ordersTable-name'>"+orders[i].asset+"</div></td><td>"+btcperasset+" <span class='showUsd small' style='font-style: italic; color: #266121;'>("+usdperasset+")</span></td><td class='ordersTable hideVerySmall'>"+asset_remaining+"</td><td class='ordersTable hideSmall hideLarge'>"+time_remaining+"</td></tr>")
             
            
             }
@@ -361,16 +395,22 @@ function createTableOrders(orders, currentblock){
                 for(var i=0; i < orders.length; i++){
                     if(orders[i].tx_index == indexParam){
                         var thisorder = orders[i]
-                    }
-                }
-                
-                if(thisorder.source == currentaddr) {
-                    
-                    buyAssetModal(indexParam, "you") 
-                    
-                } else {
-                
-                    buyAssetModal(indexParam) 
+                        
+                        console.log(thisorder)
+                        
+                        if(thisorder.status == "open") {
+                            if(thisorder.source == currentaddr) {
+
+                                buyAssetModal(indexParam, "you") 
+
+                            } else {
+
+                                buyAssetModal(indexParam) 
+
+                            }
+                        }
+                        
+                    } 
                     
                 }
             }  
@@ -391,8 +431,8 @@ function createTableMatches(matches, currentblock){
     
     if(matches.length > 0){
         
-        if($('#content-container').hasClass('col-lg-12')){
-            $('#content-container').removeClass('col-lg-12').addClass('col-lg-6')
+        if($('#yourorders-container').hasClass('col-lg-12')){
+            $('#yourorders-container').removeClass('col-lg-12').addClass('col-lg-6')
         }
     
         $('#content-matches').load('html/table-matches.html', function() {
@@ -414,6 +454,11 @@ function createTableMatches(matches, currentblock){
                 }
 
                 var sell_qty = matches[i].sell_qty / 100000000
+                
+                
+                var usd_btc = sessionStorage.getItem("currentprice_btc");
+                var usd_cost = (sell_qty * usd_btc).toFixed(2)
+                if (usd_cost == 0 ) {usd_cost = "<$0.01"} else {usd_cost = "$"+usd_cost}
 
                 if(matches[i].status == "pending") {
                     var time_remaining = ((matches[i].match_expire_index-currentblock) * 10 * 60).toTimeFormat() 
@@ -443,7 +488,7 @@ function createTableMatches(matches, currentblock){
                     var data_status = matches[i].status
                 }
 
-                $("#matchesTable tbody").append("<tr class='"+statusClass+" matchTx' id='matches-"+matches[i].order_id+"' data-tx0_hash='"+matches[i].tx0_hash+"' data-tx1_hash='"+matches[i].tx1_hash+"' data-add_from='"+matches[i].add_from+"' data-add_to='"+matches[i].add_to+"' data-sell_qty='"+matches[i].sell_qty+"' data-buy_qty='"+buy_qty+"' data-asset='"+asset+"' data-status='"+data_status+"' data-block_index='"+matches[i].block_index+"'><td id='matchTxStatus-"+matches[i].order_id+"' class='matchesTable hideSmall'>"+status+"</td><td class='matchesTable hideVerySmall hideLarge'>"+matches[i].block_index+"</td><td><div class='ordersTable-icon'>"+assetIcon(asset)+"</div><div class='matchesTable-name'>"+asset+"</div></td><td>"+buy_qty+"</td><td class='matchesTable hideVerySmall hideLarge'>"+sell_qty+"</td><td class='matchesTable hideSmall'>"+time_remaining+"</td></tr>")
+                $("#matchesTable tbody").append("<tr class='"+statusClass+" matchTx' id='matches-"+matches[i].order_id+"' data-tx0_hash='"+matches[i].tx0_hash+"' data-tx1_hash='"+matches[i].tx1_hash+"' data-add_from='"+matches[i].add_from+"' data-add_to='"+matches[i].add_to+"' data-sell_qty='"+matches[i].sell_qty+"' data-buy_qty='"+buy_qty+"' data-asset='"+asset+"' data-status='"+data_status+"' data-block_index='"+matches[i].block_index+"'><td id='matchTxStatus-"+matches[i].order_id+"' class='matchesTable hideSmall'>"+status+"</td><td class='matchesTable hideVerySmall hideLarge'>"+matches[i].block_index+"</td><td><div class='ordersTable-icon'>"+assetIcon(asset)+"</div><div class='matchesTable-name'>"+asset+"</div></td><td>"+buy_qty+"</td><td class='matchesTable hideVerySmall hideLarge'>"+sell_qty+" <span class='showUsd small' style='font-style: italic; color: #266121;'>("+usd_cost+")</span></td><td class='matchesTable hideSmall'>"+time_remaining+"</td></tr>")
 
                 $(".ordersTable-icon img").height("20px")
                 $(".ordersTable-icon img").width("20px")
@@ -458,7 +503,7 @@ function createTableMatches(matches, currentblock){
 
 
             $("#matchesTable").DataTable( {
-                "bFilter": false,
+//                "bFilter": false,
                 "lengthMenu": [[5, 10, 25, -1], [5, 10, 25, "All"]],
                 "order": [[ 1, "desc" ]],
                 "dom": '<"pull-left"f><"pull-right"l>tip',
@@ -529,10 +574,24 @@ function buyAssetModal(tx_index, owner){
 
                     
                     //$(this).find("#dialogBuyAsset-share").html("<a href='https://"+orderLink+"'>"+shareText+"</a>")
-                    $(this).find("#dialogBuyAsset-share").html("<a href='https://twitter.com/home?status="+encodeURI(shareText)+"' target='_blank'><div style='font-size: 20px; margin: -8px;'><i class='fa fa-twitter'></i></div></a>")
+                    $(this).find("#dialogBuyAsset-share").html("<a href='http://twitter.com/intent/tweet?text="+encodeURI(shareText)+"' target='_blank'><div style='font-size: 20px; margin: -8px;'><i class='fa fa-twitter'></i></div></a>")
+                    
+//                    getPoloRate(asset, function(topbid){
+//                        console.log(topbid)
+//                    })
+                    
+                    var usd_btc = sessionStorage.getItem("currentprice_btc");
+                    var usdperasset = (btcperasset * usd_btc).toFixed(2)
+
+                    if (usdperasset == 0 ) {usdperasset = "<$0.01"} else {usdperasset = "($"+usdperasset+")"}
+                    $(this).find("#dialogBuyAsset-usd").html(usdperasset)
                     
                     var btcBal = $("#btcBalance").html()
                     $(this).find(".btcBalanceModalInfo").html(btcBal)
+                    
+                    var btcBalUsd = (btcBal * usd_btc).toFixed(2)
+                    
+                    $(this).find("#dialogBuyAsset-btcBalance-usd").html("($"+btcBalUsd+")")
                     
                     $(this).find("#dialogBuyAsset-rate").data({asset_remaining: thisorder.asset_remaining, btc_remaining: thisorder.btc_remaining, divisible: thisorder.divisible})
                     
@@ -574,6 +633,18 @@ function buyAssetModal(tx_index, owner){
                         $("#dialogBuyAssetPreview-amount").data({divisible: assetDivisible})
                         $(".dialogBuyAssetPreview-asset").html(asset)
                         $("#dialogBuyAssetPreview-costandfees").html(costandfees)
+                        
+                        var usd_btc = sessionStorage.getItem("currentprice_btc");
+                        var usdperasset = (costandfees * usd_btc).toFixed(2)
+
+                        if (usdperasset == 0 ) {usdperasset = "<$0.01"} else {usdperasset = "($"+usdperasset+")"}
+                        $(this).find("#dialogBuyAssetPreview-usd").html(usdperasset)
+                        
+                        var usdperfees = (0.0006 * usd_btc).toFixed(2)
+                        var usdperbtcAmount = (btcAmount * usd_btc).toFixed(2)
+                        
+                        $(this).find("#dialogBuyAssetPreview-btctotal-usd").html("($"+usdperbtcAmount+")")
+                        $(this).find("#dialogBuyAssetPreview-fees-usd").html("($"+usdperfees+")")
                     })
                     buyAssetDialog.setMessage($message);
                     
@@ -680,6 +751,13 @@ function sellAssetModal(asset, divisible, balance){
                     var txfee = 0.0001
                     
                     $message = $('<div></div>').load('html/dialog-sell-asset-preview.html', function(){
+                        
+                        
+                        var usd_btc = sessionStorage.getItem("currentprice_btc");
+                        var usdperfee = (txfee * usd_btc).toFixed(2)
+                        $("#dialogSellAssetPreview-btccost-usd").html("($"+usdperfee+")")
+                        
+                        
                         $("#dialogSellAssetPreview-btccost").html(txfee)
                         $("#dialogSellAssetPreview-btctotal").html((assetAmount * btcperasset).toFixed(8))
                         $("#dialogSellAssetPreview-icon-lg").html(assetIcon(asset))

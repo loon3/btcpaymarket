@@ -22,6 +22,7 @@ function initWallet() {
     if(!localStorage.getItem("address_total")){       
         localStorage.setItem("address_total", 5)      
     }
+
     
 //    if(!localStorage.getItem("tooltips")){
 //        localStorage.setItem("tooltips", true) 
@@ -50,6 +51,13 @@ function initWallet() {
     
     var HDPrivateKey = bitcore.HDPrivateKey.fromSeed(m.toHex(), NETWORK)
     
+    if(localStorage.getItem("last_address")){       
+        var last_address = localStorage.getItem("last_address")
+        //console.log(last_address)
+    } else {
+        var last_address = "none"
+    }
+    
     for (var i = 1; i <= address_total; i++) {
                             
         var derived = HDPrivateKey.derive("m/0'/0/" + (i-1))
@@ -65,51 +73,60 @@ function initWallet() {
         var label = '<i class="fa fa-folder" aria-hidden="true"></i>'
         $(addressClass+"-label").html(label)
         
-        if(i == 1){
-            if(!localStorage.getItem("last_address")){       
-                localStorage.setItem("last_address", pubkey)      
-            }
-            var last_address = localStorage.getItem("last_address")
-        }
         
-        if(pubkey == last_address){
-            $("#addressCurrentLabel").html(label)
-            $("#addressCurrent").html(pubkey.substr(0,6)+"...")
-            $("#addressCurrent").data("address", pubkey)
-            
-            getBalances(pubkey)
-            
-            getUnconfirmed(address, function(txs){
-                $("#initLoading").hide()
-                createTableUnconfirmed(txs)
-            })
-            
-            getOrdersMatches(function(matches){
-                
-//                var currentblock = sessionStorage.getItem("last_block")
-//                
-//                if(currentblock.length > 0){
-//                    createTableMatches(matches, currentblock)
-//                    getBtcOrders(currentblock, function(orders){
-//                        createTableOrders(orders, currentblock)
-//                    }) 
-//                } else {
-                    getCurrentBlock(function(block){
-                        $("#initLoading").hide()
-                        
-                        createTableMatches(matches, block)
-                        getBtcOrders(block, function(orders){
-                            sessionStorage.setItem("orders", JSON.stringify(orders)) 
-                            createTableOrders(orders, block)
-                            $("#content-footer").show()
-                        }) 
-                    })
-//                }
-                         
-            })
+        if(i == 1 && last_address == "none"){
+            last_address = pubkey
+            localStorage.setItem("last_address", pubkey)    
         }
-    
+        //console.log(last_address)
+        
     }
+               
+//    $("#addressCurrentLabel").html(label)
+    $("#addressCurrent").html(last_address.substr(0,6)+"...")
+    $("#addressCurrent").data("address", last_address)
+
+    getUnconfirmed(last_address, function(txs){
+        $("#initLoading").hide()
+        $('#content-matches-menubar-container').show()
+        $('#yourorders-menubar-container').show()
+        $('#content-menubar-container').show()
+        
+        createTableUnconfirmed(txs)
+    
+
+        getBtcExchangeRate(function(usdrate){
+    //console.log("works1")
+            //console.log(last_address)
+            //console.log(usdrate)   
+            getSogImageUrls(function(){         
+    //console.log("works2")
+                getBalances(last_address, usdrate, function(){       
+    //console.log("works3")
+                    getOrdersMatches(function(matches){
+    //console.log("works4")
+                            getCurrentBlock(function(block){
+                                $("#initLoading").hide()
+
+                                createTableMatches(matches, block)
+                                getBtcOrders(block, function(orders){
+                                    sessionStorage.setItem("orders", JSON.stringify(orders)) 
+                                    createTableOrders(orders, block)
+                                    $("#content-footer").show()
+                                    //console.log("works")
+                                }) 
+                            })
+
+                    })
+
+                })
+
+            })
+
+        })
+        
+    })
+    
     
 }
 
@@ -127,19 +144,24 @@ function refreshTables(address){
 
         BootstrapDialog.closeAll()
 
-        getBalances(address)
-
         getUnconfirmed(address, function(txs){
             createTableUnconfirmed(txs)
-            getOrdersMatches(function(matches){
-                getCurrentBlock(function(block){
-                    createTableMatches(matches, block)
-                    getBtcOrders(block, function(orders){
-                        createTableOrders(orders, block)
-                    }) 
+            getBtcExchangeRate(function(usdrate){
+                
+                getBalances(address, usdrate, function(){
+                    getOrdersMatches(function(matches){
+                        getCurrentBlock(function(block){
+                            createTableMatches(matches, block)
+                            getBtcOrders(block, function(orders){
+                                sessionStorage.setItem("orders", JSON.stringify(orders)) 
+                                createTableOrders(orders, block)
+                            }) 
+                        })
+                    })
                 })
             })
         })
+
 
     }
     
@@ -151,32 +173,81 @@ function resetWallet(){
     location.reload()
 }
 
-function getBalances(address){
+function getBalances(address, usdrate, callback){
     
     $("#btcBalance").html("...")
     
     getBtcBalance(address, function(btc){
         
-        $("#btcBalance").html(btc)
+//        console.log("btc: "+btc)
+//        console.log("usdrate: "+usdrate)
         
-        getAssets(address)
+        var usd_amount = (btc * usdrate).toFixed(2)
+        if (usd_amount == 0) {usd_amount = "(<$0.01)"} else {usd_amount = "($"+usd_amount+")"}
+        
+        $("#btcBalance").html(btc)
+
+        $("#usdBalance").html(usd_amount)
+        
+        getAssets(address, function(){
+            callback()
+        })
         
     })
     
 }
 
-function getBtcBalance(address, callback){
+function getBtcExchangeRate(callback){
     
-    if(address.substr(0,1) == "m"){      
-        var source_html = "https://tbtc.blockr.io/api/v1/address/info/"+address
+    if(!sessionStorage.getItem("currentprice_btc") || sessionStorage.getItem("currentprice_btc") == ""){     
+        
+        var source_html = "https://api.coindesk.com/v1/bpi/currentprice.json"
+        
+        $.getJSON( source_html, function( apidata ) {  
+      
+            sessionStorage.setItem("currentprice_btc", apidata.bpi.USD.rate_float)
+            
+            callback(apidata.bpi.USD.rate_float)
+        
+        }).error(function() { callback(0) })
+        
     } else {
-        var source_html = "https://btc.blockr.io/api/v1/address/info/"+address 
+        
+        callback(sessionStorage.getItem("currentprice_btc"))
+        
     }
     
+}
+
+function getPoloRate(asset, callback){
+    var source_html = "https://poloniex.com/public?command=returnOrderBook&currencyPair=BTC_"+asset+"&depth=10"
+        
     $.getJSON( source_html, function( apidata ) {  
+
+        if(!apidata.error){
+            var topBid = parseFloat(apidata.bids[0][0])
+        } else {
+            var topBid = 0
+        }
+        
+        callback(topBid)
+
+    }).error(function() { callback(0) })
+    
+}
+
+function getBtcBalance(address, callback){
+    
+    var source_html = "https://btc.blockr.io/api/v1/address/info/"+address 
+    
+    $.getJSON( source_html, function( apidata ) { 
+        
+        //console.log(apidata)
           
         var balance = parseFloat(apidata.data.balance); //blockr
              
+        //console.log(balance)
+        
         callback(balance)
         
     })
@@ -367,13 +438,25 @@ function getUnconfirmedCP(txs, callback){
     })
 }
 
-function assetIcon(asset){
+function assetIcon(asset, size){
     
-    return "<img src='https://counterpartychain.io/content/images/icons/"+asset.toLowerCase()+".png'>"
+    if(checkIfSog(asset) == false){
+       
+        return "<img src='https://counterpartychain.io/content/images/icons/"+asset.toLowerCase()+".png'>"
+    
+    } else {   
+        if(size == "small"){
+            return "<img src='"+checkIfSog(asset)+"' width='48px' height='48px'>"
+        } else {
+            return "<img src='"+checkIfSog(asset)+"' width='240px'>"
+        }
+        
+    }
     
 }
 
-function getAssets(address){
+
+function getAssets(address, callback){
     
 //    if(address.substr(0,1) != "m"){
         
@@ -396,7 +479,7 @@ function getAssets(address){
                         if (data.data[i].amount.indexOf(".")==-1) {var divisible = "no"} else {var divisible = "yes"}
 
                         if(assetname.substr(0,1) != "A") {
-                            $("#assetDropdown").append("<div style='width: 320px; padding: 5px;'><div class='row assetDropdownItem'><div class='col-xs-2'><div class='assetDropdownItem-icon'>"+assetIcon(assetname)+"</div></div><div class='col-xs-10'><div class='assetDropdownItem-name' data-divisible='"+divisible+"'>"+assetname+"</div><div class='assetDropdownItem-balance'>"+assetbalance+"</div></div></div></div>")
+                            $("#assetDropdown").append("<div style='width: 320px; padding: 5px;'><div class='row assetDropdownItem'><div class='col-xs-2'><div class='assetDropdownItem-icon'>"+assetIcon(assetname, 'small')+"</div></div><div class='col-xs-10'><div class='assetDropdownItem-name' data-divisible='"+divisible+"'>"+assetname+"</div><div class='assetDropdownItem-balance'>"+assetbalance+"</div></div></div></div>")
                         }
                         
                     }
@@ -405,11 +488,67 @@ function getAssets(address){
             } else {
                 $("#assetDropdown").html("<li class='disabled'><a href='#'>No Assets at this Address</a></li>")
             }
+            
+            callback()
         })
         
 //    }
     
 }
+
+
+
+function getSogImageUrls(callback){
+    
+    if(!sessionStorage.getItem("sog_images")){     
+        
+        var source_html = window.location.pathname+"php/sogCards.php"
+
+        $.getJSON( source_html, function( apidata ) {  
+            
+            var pepe_html = window.location.pathname+"php/pepeCards.php"
+            
+            $.getJSON( pepe_html, function( pepes ) {
+                
+                var alldata = collect(apidata, pepes)
+                
+                //console.log(alldata)
+
+                sessionStorage.setItem("sog_images", JSON.stringify(alldata))
+
+                callback()
+            }).error(function(){
+                sessionStorage.setItem("sog_images", JSON.stringify(apidata))
+                callback()
+            })
+        
+        }).error(function(){
+            callback()
+        })
+        
+    } else {
+        
+        callback()
+        
+    }
+    
+}
+
+function checkIfSog(asset) {
+      
+    var sogList = $.parseJSON(sessionStorage.getItem("sog_images"))
+    
+    //console.log(sogList)
+    
+    if(sogList[asset]) {
+        //console.log(sogList[asset])
+        return sogList[asset]
+    } else {
+        return false
+    }
+    
+}
+
 
 function getprivkey(inputaddr, inputpassphrase){
 
@@ -573,6 +712,8 @@ function createTableUnconfirmed(txs){
     $('#content-unconfirmed').html("<i class='fa fa-refresh fa-spin fa-3x fa-fw'></i><span class='sr-only'>Loading...</span>")
 //    $("#content-unconfirmed").show()
 //    $("#content-unconfirmed-header").show()
+    
+    //console.log(txs)
     
     if(txs.length > 0){
         
@@ -921,11 +1062,6 @@ function pendingAlertModal() {
 }
 
 
-//function checkLoading(callback){
-//    
-//
-//    
-//}
 
 
 //

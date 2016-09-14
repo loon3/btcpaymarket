@@ -245,6 +245,15 @@ $( document ).ready(function() {
 
     })
     
+    $('a#toggleUsd').click(function(e) {
+    //prevent the 'following' behaviour of hyperlinks by preventing the default action
+    e.preventDefault();
+
+        $(".showUsd").toggle()
+
+    });
+    
+   
     
     
     
@@ -300,10 +309,14 @@ $( document ).ready(function() {
     
     
     setInterval(function(){
-        var address = $("#addressCurrent").data("address")
-        refreshTables(address)
+        var checkModals = isABootstrapModalOpen()
+        if (checkModals == false) {
+            var address = $("#addressCurrent").data("address")
+            sessionStorage.setItem("currentprice_btc", "")
+            refreshTables(address)
+        }
     }, 600000) //refresh at 10 min interval
-    //}, 15000) //for testing, 15 sec interval
+//    }, 15000) //for testing, 15 sec interval
    
     
     

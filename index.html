@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="css/font-awesome.min.css">
     <link rel="stylesheet" href="css/jquery-ui.min.css"> 
     <link rel="stylesheet" href="css/dataTables.bootstrap.min.css">
-<!--    <link href="https://fonts.googleapis.com/css?family=Creepster|Monoton|Prompt" rel="stylesheet">-->
+    <link href="https://fonts.googleapis.com/css?family=Creepster|Monoton|Prompt" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css"> 
     
     <script src="js/lib/jquery.min.js" defer></script>
@@ -61,14 +61,14 @@
                 <span class="icon-bar"></span>
               </button>
               <a class="navbar-brand" href=".">
-                  <span id='navbar-img'><img src='./images/bpm.png' height="36px"></span>
-<!--                  <span id='navbar-sitename'>BTCPAY Market</span>-->
+                  <div id='navbar-img'><img src='./images/btcpm2.png' height="38px"></div>
+                  <div id='navbar-sitename'>BTC<span style='color: #ed1650;'>PM</span></div>
                 </a>
             </div>
 
             <div class="collapse navbar-collapse navbar-right" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav">
-                    <li><a id="balanceNav" href="#" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Address Balance" class="red-tooltip"><div id="btcBalance-box" class="inset-shadow"><span id="btcBalance">0</span> BTC</div></a></li>
+                    <li><a id="balanceNav" href="#" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Address Balance" class="red-tooltip"><div id="btcBalance-box" class="inset-shadow"><span id="btcBalance">0</span> BTC <span id='usdBalance' class='showUsd small' style='font-style: italic; color: #266121;'></span></div></a></li>
                     <li class="dropdown red-tooltip" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Your Address">
                       
                       <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
@@ -100,10 +100,12 @@
                     <li class="dropdown red-tooltip" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Settings">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span class="navLabel" style="font-size: 13pt"><i class="fa fa-cogs" aria-hidden="true"></i></span></a>
                       <ul class="dropdown-menu">
-                        <li><a id="resetNav" href="#">Reset Passphrase</a></li>
-<!--                        <li><a id="toggleHelpBubbles" href="#">Turn off Help Bubbles</a></li>-->
-                        <li role="separator" class="divider"></li>
+                        
+                          
+                        <li><a id="toggleUsd" href="#">Toggle USD</a></li>
                         <li><a id="aboutNav" href="#">About</a></li>
+                        <li role="separator" class="divider"></li>
+                        <li><a id="resetNav" href="#">Reset Wallet</a></li>
                       </ul>
                     </li>
                 </ul>
@@ -145,30 +147,7 @@
               </div>
         </div>
     
-        <div id="yourorders-container" class="col-lg-12">
-              <div id="yourorders-menubar-container">
-            <div id="btn-minimize-yourorders-container">
-              <div id="btn-minimize-yourorders"><i class="fa fa-minus"></i><span class="sr-only">Hide</span></div>
-              <div id="yourorders-menubar">Your Sell Orders</div>
-            </div>
-                <div id="yourorders-subcontainer">
-              <div id="yourorders-header" align="center">
 
-<!--                  <h5>Click on an Active Order to buy assets with BTC</h5>-->
-<!--                  <div class="small" align="center" style="font-style: italic"></div>-->
-              </div>
-
-              <div id="yourorders" align="center">
-                  
-                  <div style='padding: 0 0 10px 0;'>
-                      <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
-                      <span class="sr-only">Loading...</span>
-                  </div>
-              </div>
-            </div>
-              
-            </div>
-        </div>
         <div id="content-matches-container" class="col-lg-6">
               <div id="content-matches-menubar-container">
                   <div id="btn-minimizeOrderMatches-container">
@@ -198,7 +177,30 @@
         </div>
     
 
-    
+            <div id="yourorders-container" class="col-lg-12">
+              <div id="yourorders-menubar-container">
+            <div id="btn-minimize-yourorders-container">
+              <div id="btn-minimize-yourorders"><i class="fa fa-minus"></i><span class="sr-only">Hide</span></div>
+              <div id="yourorders-menubar">Your Sell Orders</div>
+            </div>
+                <div id="yourorders-subcontainer">
+              <div id="yourorders-header" align="center">
+
+                  <div class="small" align="center" style="font-style: italic">Active Sell Orders with less than 0.001 BTC remaining will not appear in the Asset Market</div>
+
+              </div>
+
+              <div id="yourorders" align="center">
+                  
+                  <div style='padding: 0 0 10px 0;'>
+                      <i class="fa fa-refresh fa-spin fa-3x fa-fw"></i>
+                      <span class="sr-only">Loading...</span>
+                  </div>
+              </div>
+            </div>
+              
+            </div>
+        </div>
 
         <div id="content-container" class="col-lg-12">
               <div id="content-menubar-container">
@@ -231,7 +233,10 @@
 
 
           <div id="content-footer" align="center">
-        <b>BTCPAY Market v0.3</b><br>info@btcpaymarket.com
+            <div style='padding: 20px 0 10px 0;'><a class='white-link' href="https://github.com/loon3/btcpaymarket" target="_blank"><i class="fa fa-github fa-2x"></i></a></div>
+            <div style='font-weight: bold;'>BTCPAY Market v0.3.1</div>
+           
+            <div class='small' style='padding: 10px 0 0 0;'>BTC/USD Exchange Rate from Coindesk</div>  
           </div>
           
           

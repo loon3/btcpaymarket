@@ -10,13 +10,13 @@ Number.prototype.toTimeFormat = function () {
     if (seconds < 10) {seconds = "0"+seconds;}
     if (days < 10) {days = "0"+days;}
 
-    if (days > 0) {
+//    if (days > 0) {
         return days + "d " + hours + "h " + minutes + "m"
-    } else if (hours > 0) {
-        return hours + "h " + minutes + "m"
-    } else {
-        return minutes + "m"
-    }
+//    } else if (hours > 0) {
+//        return hours + "h " + minutes + "m"
+//    } else {
+//        return minutes + "m"
+//    }
 
     //return days+":"+hours+":"+minutes;
 
@@ -101,4 +101,21 @@ function checkForUrlParams() {
         // no query string exists
         return false
     }
+}
+
+function isABootstrapModalOpen() {
+    return $('.modal.in').length > 0;
+}
+
+function collect() {
+  var ret = {};
+  var len = arguments.length;
+  for (var i=0; i<len; i++) {
+    for (p in arguments[i]) {
+      if (arguments[i].hasOwnProperty(p)) {
+        ret[p] = arguments[i][p];
+      }
+    }
+  }
+  return ret;
 }
