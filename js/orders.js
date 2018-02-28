@@ -165,7 +165,7 @@ function calcAssetAmount(asset, btc, callback) {
   
                                     $("#dialogSellAsset-cost").data("valid", true)
                                     $("#dialogSellAsset-cost").data("total", btcAmount)
-                                    var displayTotal = "<div>" + parseFloat(btcAmount).toFixed(8) + " BTC</div><div class='small showUsd' style='font-style: italic; color: #266121;'>($"+usdperorder+")</div"
+                                    var displayTotal = "<div>" + parseFloat(btcAmount).toFixed(8) + " BTC</div><div class='small showUsd' style='font-style: italic; color: #266121;'>($"+usdperorder+")</div>"
                                     callback(displayTotal)   
                                 }
                             }
@@ -235,7 +235,7 @@ function calcBtcOrderAmount(inputval, callback) {
                                 $("#dialogBuyAsset-cost").data("valid", true)
                                 $("#dialogBuyAsset-cost").data("total", total.toFixed(8))
                                 
-                                var displayTotal = "<div>" + total.toFixed(8) + " BTC</div><div class='small showUsd' style='font-style: italic; color: #266121;'>($"+usdperorder+")</div"
+                                var displayTotal = "<div>" + total.toFixed(8) + " BTC</div><div class='small showUsd' style='font-style: italic; color: #266121;'>($"+usdperorder+")</div>"
                                 
                                 callback(displayTotal)   
                             }
